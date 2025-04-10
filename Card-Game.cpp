@@ -83,11 +83,51 @@ class player {
         std::string get_name() {
             return name;   
         }
+        
+        void print_hand() {
+            for(card selected_card : hand) {
+                std::cout << "[" << selected_card.card_info() << "] ";
+            }
+            std::cout << '\n';
+        }
+        
+        bool has_card(std::string card_rank) {
+            for(card selected_card : hand) {
+                if(selected_card.rank == card_rank) {
+                    return true;   
+                }
+            }
+            return false;
+        }
+        
+        std::vector<card> give_all_of_rank(std::string &chosen_card) {
+            std::vector<card> cards_to_give;
+            for(auto it = hand.begin(); it != hand.end();) {
+                if(it->rank == chosen_card) {
+                    cards_to_give.push_back(*it);
+                    hand.erase(it);
+                } else {
+                    it++;   
+                }
+                
+            }
+            return cards_to_give;
+            
+        }
+        
+        void take_all_of_rank(player &chosen_payer, std::string &chosen_card) {
+            std::vector<card> taken_cards = chosen_payer.give_all_of_rank(chosen_card);
+            for(card selected_card : taken_cards) {
+                hand.push_back(selected_card);
+            }
+            
+        }
 };
 
 class go_fish {
     private:
         std::vector<player> players;
+        deck mydeck;
         
     public:
         void add_player(std::string name) {
@@ -119,9 +159,8 @@ class go_fish {
         }
         
         void player_setup() {
-            bool selecting{true};
             std::string command{""}, player_name{""};
-            while(selecting) {
+            while(true) {
                 print_players();
                 std::cout << "\"add #\" to add players, \"remove #\" to remove a player and \"continue #\" to confirm players: ";
                 std::cin >> command >> player_name;
@@ -130,26 +169,64 @@ class go_fish {
                 } else if(command == "remove") {
                    remove_player(stoi(player_name));
                 } else if(command == "continue") {
-                    selecting = false;   
+                    if(players.size() < 2) {
+                        std::cout << "must have atleast 2 players to play\n";
+                    } else {
+                        break;   
+                    }
                 }
                 std::cout << '\n';
             }
             
         }
         
+        bool ask_player(std::string &player_number, std::string &card_name) {
+            return players[stoi(player_number)-1].has_card(card_name);
+            
+        }
+        
         void start_game() {
-            
-            
+            while(true) {
+                for(size_t i = 0; i < players.size(); i++) {
+                    std::string chosen_player{""}, chosen_card{""};
+                    
+                    while(true) {
+                        std::cout << "\nits your turn " << players[i].get_name() << " your cards are: ";
+                        players[i].print_hand();
+                        print_players();
+                        std::cout << "please input \"player number\" \"card to ask for\":";
+                        std::cin >> chosen_player >> chosen_card;
+                        if(players[stoi(chosen_player)-1].get_name() != players[i].get_name()) {
+                            if(players[i].has_card(chosen_card)) {
+                                if(ask_player(chosen_player, chosen_card)) {
+                                    std::cout << players[stoi(chosen_player)-1].get_name() << " has that card\n";
+                                    players[i].take_all_of_rank(players[stoi(chosen_player)-1], chosen_card);
+                                    std::cout << players[i].get_name() << " took all of " << players[stoi(chosen_player)-1].get_name() << "'s " << chosen_card << "'s\n";
+                                } else {
+                                    std::cout << players[stoi(chosen_player)-1].get_name() << " does not have that card go fish\n"; 
+                                    players[i].draw_card(mydeck);
+                                }
+                                break;
+                            } else {
+                                std::cout << "to ask for a card you yourself need to have a card of the same rank" << players[i].get_name() << "\n"; 
+                            }
+                        } else {
+                            std::cout << "you cannot ask yourself for a card " << players[i].get_name() << "\n";    
+                        }
+                    }
+                    
+                    
+                }
+            }
             
         }
         
         void setup_game() {
-            deck mydeck;
             mydeck.make_deck();
             mydeck.shuffle_deck();
             player_setup();
             deal_cards(mydeck);
-            start_Game();
+            start_game();
             
         }
 };
