@@ -26,19 +26,23 @@ class deck {
     public:
         deck() : g(rd()) {}
         
+        void sort() {
+            std::sort(cards.begin(), cards.end(), [](const card& a, const card& b) {return (a.value > b.value);});
+        }
+        
         void make_deck() {
             for(std::string suit : card_suits) {
                 int current_value{0};
                 for(std::string rank : card_ranks) {
-                    current_value++;
                     cards.push_back(card(suit, rank, current_value));
+                    current_value++;
                 }
             }   
         }
         
         void print_deck() {
             for(card selected_card : cards) {
-                std::cout << selected_card.rank << " of " << selected_card.suit << '\n';
+                std::cout << selected_card.card_info() << '\n';
             }   
         }
         
@@ -122,6 +126,35 @@ class player {
             }
             
         }
+        
+        void make_books() {
+            int rank_count{0};
+            std::string book_made_of;
+            for(int i = 0; i < 13; i++) {
+                for(card& selected_card : hand) {
+                    if(selected_card.value == i) {rank_count++;}
+                }
+                if(rank_count == 4) {
+                    books.push_back(i);
+                    for(auto it = hand.begin(); it != hand.end();) {
+                        if(it->value == i) {
+                            book_made_of = it->rank;
+                            hand.erase(it);
+                        } else {
+                            it++;   
+                        }
+                    }
+                }
+                rank_count = 0;
+            }
+            if(book_made_of != "") {
+                std::cout << name << " made a book of " << book_made_of << "'s\n";   
+            }
+        }
+        
+        bool hand_empty() {
+            return hand.empty();
+        }
 };
 
 class go_fish {
@@ -175,7 +208,7 @@ class go_fish {
                         break;   
                     }
                 }
-                std::cout << '\n';
+                std::cout << "\n\n";
             }
             
         }
@@ -185,16 +218,15 @@ class go_fish {
             
         }
         
-        void start_game() {
+        void play_game() {
             while(true) {
                 for(size_t i = 0; i < players.size(); i++) {
                     std::string chosen_player{""}, chosen_card{""};
-                    
                     while(true) {
-                        std::cout << "\nits your turn " << players[i].get_name() << " your cards are: ";
+                        std::cout << "\n\n\nits your turn " << players[i].get_name() << " your cards are: ";
                         players[i].print_hand();
                         print_players();
-                        std::cout << "please input \"player number\" \"card to ask for\":";
+                        std::cout << "please input \"player number\" \"card rank\":";
                         std::cin >> chosen_player >> chosen_card;
                         if(players[stoi(chosen_player)-1].get_name() != players[i].get_name()) {
                             if(players[i].has_card(chosen_card)) {
@@ -203,19 +235,22 @@ class go_fish {
                                     players[i].take_all_of_rank(players[stoi(chosen_player)-1], chosen_card);
                                     std::cout << players[i].get_name() << " took all of " << players[stoi(chosen_player)-1].get_name() << "'s " << chosen_card << "'s\n";
                                 } else {
-                                    std::cout << players[stoi(chosen_player)-1].get_name() << " does not have that card go fish\n"; 
+                                    std::cout << players[stoi(chosen_player)-1].get_name() << " does not have any " << chosen_card << "'s go fish\n"; 
                                     players[i].draw_card(mydeck);
                                 }
                                 break;
                             } else {
-                                std::cout << "to ask for a card you yourself need to have a card of the same rank" << players[i].get_name() << "\n"; 
+                                std::cout << "you cannot ask for a card rank that you yourself do not have\n";
                             }
                         } else {
-                            std::cout << "you cannot ask yourself for a card " << players[i].get_name() << "\n";    
-                        }
+                            std::cout << "you cannot ask yourself for a card\n";   
+                        }  
                     }
-                    
-                    
+                    players[i].make_books();
+                    if(players[i].hand_empty()) {
+                        std::cout << players[i].get_name() << " won go fish";
+                        return;
+                    }
                 }
             }
             
@@ -226,7 +261,7 @@ class go_fish {
             mydeck.shuffle_deck();
             player_setup();
             deal_cards(mydeck);
-            start_game();
+            play_game();
             
         }
 };
